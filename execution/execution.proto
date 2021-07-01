@@ -1,0 +1,181 @@
+syntax = "proto3";
+service Execution {
+  //  实盘交易相关的接口定义
+
+  //  基于K线策略的接口
+
+  //  TODO:implement me!
+  //  设置仓位为某个值(单位为总权益%)
+  rpc TargetPosition(TargetInfo) returns (OrderResult) {}
+  //  TODO:implement me!
+  //  增加或者减少仓位（单位为总权益%）
+  rpc AdjustPosition(AdjustInfo) returns (OrderResult) {}
+
+  //  根据数量来下单
+  rpc Order(OrderInfo)returns(OrderResult){}
+
+  rpc CheckEquity(CheckEquityInfo) returns(CheckEquityResult){}
+
+  rpc CheckPosition(CheckPositionInfo)returns(CheckPositionResult){}
+
+  // 基差策略的接口
+  // 查询基差距行情
+  rpc CheckBasis(CheckBasisInfo) returns(CheckBasisResult){}
+  // 基差下单
+  rpc OrderBasis(OrderBasisInfo) returns(OrderResult){}
+  // 基差查询订单
+  rpc CheckBasisPosition(CheckBasisPositionInfo) returns(CheckBasisPositionResult){}
+  // 基差同时查询持仓和余额信息
+  rpc CheckBasisPositionEquity(CheckBasisPositionInfo) returns(CheckBasisPositionEquityResult){}
+  //  多个交易对同时下单
+  rpc MultipleOrder(MultipleOrderInfo) returns(OrderResult){}
+
+  // 跨交易所同时下单
+  rpc TwoOrder(TwoOrderInfo) returns(OrderResult){}
+  rpc CheckTwoOrderPosition(CheckTwoOrderPositionInfo) returns(CheckBasisPositionResult){}
+}
+
+// input
+message MultipleOrderInfo{
+  string api_key = 1;
+  string secret_key = 2;
+  string passphrase = 3;
+  repeated int32 symbol_ids = 4;
+  repeated double target_amounts = 5;
+}
+
+
+message TargetInfo{
+  double target_percent = 1;
+  string direction = 2;
+  string api_key = 3;
+  string secret_key = 4;
+  string passphrase = 5;
+  double percent = 6;
+  int32 symbol_id = 7;
+}
+
+message AdjustInfo{
+  double percent = 1;
+  int32 longitude = 2;
+  int32 robot_id = 3;
+}
+
+message OrderInfo{
+  int32 symbol_id = 1;
+  string direction = 2;
+  string api_key = 3;
+  string secret_key = 4;
+  string passphrase = 5;
+  double amount = 6;
+}
+
+message CheckEquityInfo{
+  int32 symbol_id = 1;
+  string api_key = 2;
+  string secret_key = 3;
+  string passphrase = 4;
+}
+
+message CheckPositionInfo{
+  int32 symbol_id = 1;
+  string api_key = 2;
+  string secret_key = 3;
+  string passphrase = 4;
+}
+
+message CheckBasisPositionInfo{
+  int32 symbol_id_1 = 1;
+  int32 symbol_id_2 = 2;
+  string api_key = 5;
+  string secret_key = 6;
+  string passphrase = 7;
+}
+
+message OrderBasisInfo{
+  int32 symbol_id_1 = 1;
+  int32 symbol_id_2 = 2;
+  string direction_1 = 3;
+  string direction_2 = 4;
+  string api_key = 5;
+  string secret_key = 6;
+  string passphrase = 7;
+  double amount_1 = 8;
+  double amount_2 = 9;
+}
+
+message CheckBasisInfo{
+  int32 symbol_id_1 = 1;
+  int32 symbol_id_2 = 2;
+}
+
+message TwoOrderInfo{
+  int32 symbol_id_1 = 1;
+  int32 symbol_id_2 = 2;
+  string direction_1 = 3;
+  string direction_2 = 4;
+  string api_key_1 = 5;
+  string secret_key_1 = 6;
+  string passphrase_1 = 7;
+  string api_key_2 = 8;
+  string secret_key_2 = 9;
+  string passphrase_2 = 10;
+  double amount_1 = 11;
+  double amount_2 = 12;
+}
+
+message CheckTwoOrderPositionInfo{
+  int32 symbol_id_1 = 1;
+  int32 symbol_id_2 = 2;
+  string api_key_1 = 5;
+  string secret_key_1 = 6;
+  string passphrase_1 = 7;
+  string api_key_2 = 8;
+  string secret_key_2 = 9;
+  string passphrase_2 = 10;
+}
+
+
+// result
+message OrderResult{
+  // code=0失败,code=1成功,code=2部分成功
+  int32 code = 1;
+}
+
+message CheckPositionResult{
+  double long_amount = 1;
+  double short_amount = 2;
+}
+
+message CheckBasisPositionResult{
+  double long_amount_1 = 1;
+  double short_amount_1 = 2;
+  double long_amount_2 = 3;
+  double short_amount_2 = 4;
+}
+
+message CheckBasisResult{
+  double long = 1;
+  double short = 2;
+  double best_long_qty = 3;
+  double best_short_qty = 4;
+}
+
+message CheckEquityResult{
+  double equity = 1;
+  double available = 2;
+  double cont = 3;
+}
+
+message CheckBasisPositionEquityResult{
+  double equity = 1;
+  double available = 2;
+  double cont = 3;
+  double long_amount_1 = 4;
+  double short_amount_1 = 5;
+  double long_amount_2 = 6;
+  double short_amount_2 = 7;
+}
+
+
+
