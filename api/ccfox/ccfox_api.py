@@ -19,7 +19,8 @@ from util.wecom_message_util import WeComMessage
 symbols = {}
 with session_socpe() as sc:
     sc: Session
-    objs = sc.query(SymbolModel).filter(SymbolModel.exchange == 'ccfox').all()
+    #objs = sc.query(SymbolModel).filter(SymbolModel.exchange == 'ccfox').all()
+    objs = []
     for obj in objs:
         obj: SymbolModel
         symbols[int(obj.underlying)] = obj.symbol

@@ -93,7 +93,7 @@ class FourHourAlgo(bt.Algo):
                     logger.info(f"开仓:{symbol}-{target.universe.iloc[-1].name}")
                     target.rebalance(1, child=f"{symbol}_Open", base=self.base)
 
-                    current_holding[symbol] = target.universe.iloc[-1].name
+                    current_holding[symbol] = target.universe.iloc[-1][f"{symbol}_Open"]
 
             # 如果持仓了，判断是否要平仓
             else:
@@ -105,7 +105,8 @@ class FourHourAlgo(bt.Algo):
                                 f"{target.universe.iloc[-1][f'{symbol}_Open']}-{day_5_low}")
                     target.rebalance(0, child=f"{symbol}_Open", base=self.base)
                     del current_holding[symbol]
-                    target.perm["current_holding"] = current_holding
+
+            target.perm["current_holding"] = current_holding
 
         return True
 
@@ -114,7 +115,6 @@ def make_backtest_data(symbols: List[str]) -> pd.DataFrame:
     logger.info(f"开始获取数据:{symbols}")
     # start_time = "2019-01-01 00:00:00"
     # start_time = "2018-12-30 00:00:00"
-    start_time = "2018-01-01 00:00:00"
     # start_time = "2019-05-20 00:00:00"
     # start_time = "2020-07-31 20:00:00"
     # start_time = "2020-08-01 00:00:00"
@@ -124,9 +124,9 @@ def make_backtest_data(symbols: List[str]) -> pd.DataFrame:
     # end_time = "2019-05-28 00:00:00"
     # end_time = "2021-06-03 00:00:00"
 
+    start_time = "2018-01-01 00:00:00"
     end_time = "2021-06-10 00:00:00"
-
-    # start_time = "2021-05-01 00:00:00"
+    #
     # start_time = "2021-01-01 00:00:00"
     # end_time = "2021-06-25 00:00:00"
 
@@ -156,7 +156,7 @@ class ChangeFlowBacktestV12_4H(object):
         self.ADDTIONAL_INFO_DATE_BUY = []
         self.ADDTIONAL_INFO_PRICE_BUY = []
 
-    def backtest_enhance_btc_v12(self, symbol_name):
+    def backtest_enhance_btc_v12(self, symbol_name) -> str:
         logger.info(f"开始回测做多策略 v12 : {symbol_name}")
         # period = 49
         period = 24
@@ -166,7 +166,6 @@ class ChangeFlowBacktestV12_4H(object):
         # symbols = ["BTC"]
 
         data = make_backtest_data(symbols)
-
 
         data[f"open_{minutes}"] = data.resample(f"{minutes}min", offset=f"{60 * 0}min")[
             f"{symbol_name.upper()}-USDT_Open"].first(
@@ -203,8 +202,6 @@ class ChangeFlowBacktestV12_4H(object):
             "min")
 
         data[f'{period}_close_{minutes}'].ffill(inplace=True)
-
-
 
         strategy_algo = FourHourAlgo(symbols=symbols, backtest=self)
         strategy = bt.Strategy('CombinationStrategy', [strategy_algo])
@@ -258,7 +255,8 @@ class ChangeFlowBacktestV12_4H(object):
 
         # TODO:make a name
         now = datetime.now()
-        result_name = f"{symbol_name}_{strategy_algo.period}_{strategy_algo.open_times}_daily"
+        result_name = f"{datetime.now().minute}_{datetime.now().second}_{symbol_name}_{strategy_algo.period}" \
+                      f"_{strategy_algo.open_times}_daily.csv"
 
         columns = [
             "开仓时间",
@@ -270,7 +268,7 @@ class ChangeFlowBacktestV12_4H(object):
             "盈利",
             "净值"
         ]
-        results_df[columns].to_csv(f"{result_name}_{self}.csv", float_format='%.12f')
+        results_df[columns].to_csv(result_name, float_format='%.12f')
 
         new_transactions.to_csv("transactions.csv", float_format='%.12f')
 
@@ -291,3 +289,4 @@ class ChangeFlowBacktestV12_4H(object):
         # plt.show()
         logger.info(f"btc回测版本 15min 成功:{symbols}")
         # reset golbal variable
+        return result_name

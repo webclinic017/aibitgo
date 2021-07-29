@@ -17,8 +17,7 @@ logger = Logger('AsynExchange', logger_level)
 
 
 class AsynExchange:
-    ok = ExchangeAPI(1)
-    ExchangeAPIModel.to_redis()
+    ok = None
 
     @classmethod
     def get_apis(cls):
@@ -27,8 +26,9 @@ class AsynExchange:
     @classmethod
     def update_symbol(cls):
         """定时任务"""
-        # asyncio.run(cls.ok.get_all_symbols())
-        # cls.ok.get_basis_symbols()
+        cls.ok = ExchangeAPI(1)
+        asyncio.run(cls.ok.get_all_symbols())
+        cls.ok.get_basis_symbols()
         asyncio.run(BinanceApi.get_all_symbols())
         BinanceApi.get_basis_symbols()
         SymbolModel.update_symbol_info()

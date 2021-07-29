@@ -57,7 +57,7 @@ class BinanceApi(BinanceRequest):
         CLOSE_SHORT = 'SHORT'  # 平空
 
     async def get_kline(self, timeframe: str, start_date: str, end_date: str = None, to_db: bool = False,
-                        to_local: bool = False):
+                        to_local: bool = False, limit=None) -> pd.DataFrame:
         """
         Args:
             to_db: 是否入库，默认不入库
@@ -68,9 +68,10 @@ class BinanceApi(BinanceRequest):
         ]
         """
         granularity = self.parse_time_frame(timeframe) * 1000
-        startTime = arrow.get(start_date).timestamp * 1000
-        end = arrow.get(end_date).timestamp * 1000
-        limit = 1000 if self.symbol.market_type == self.MarketType.SPOT else 1500
+        startTime = arrow.get(start_date).timestamp() * 1000
+        end = arrow.get(end_date).timestamp() * 1000
+        if not limit:
+            limit = 1000 if self.symbol.market_type == self.MarketType.SPOT else 1500
         path = f'{self.get_url(self.symbol.market_type)}/v1/klines'
         data = []
         while startTime < end:
@@ -790,9 +791,9 @@ class BinanceApi(BinanceRequest):
         """获取某个交易对的tick"""
         path = f'{self.get_url(self.symbol.market_type)}/v1/ticker/bookTicker?symbol={self.symbol.symbol}'
         data = await self.public_request_get(path)
-        data["time"] = time.time() * 1000
-        ticker = self.ticker_process(data)
-        return ticker
+        # data["time"] = time.time() * 1000
+        # ticker = self.ticker_process(data)
+        return data
 
     async def cancel_symbol_order(self):
         if self.symbol.market_type == self.MarketType.USDT_FUTURE:

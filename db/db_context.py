@@ -8,7 +8,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker, Session
 from base.config import mysql_cfg, logger_level
 from base.log import Logger
 
-db_connect = "mysql+pymysql://{user}:{passwd}@{host}:{port}/hello_world".format_map(mysql_cfg)
+db_connect = "mysql+pymysql://{user}:{passwd}@{host}:{port}/{db}".format_map(mysql_cfg)
 engine = create_engine(db_connect, max_overflow=1000, pool_size=20)
 fast_api_session_maker = FastAPISessionMaker(db_connect)
 SessionType = scoped_session(sessionmaker(bind=engine, expire_on_commit=False))

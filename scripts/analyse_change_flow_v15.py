@@ -13,7 +13,7 @@
 
 备注： 执行平仓后存在反弹的情况， K线上会出现当前阳线， 此时依据开仓条件继续开仓
 
-eth， bnb， ada， xrp， dot， link， xlm， trx， eos， xrm） 这10个品种有后面新晋的主流， 也有类似eos， xrm之类的从前10跌出去到20-30的。 我们测这一波吧
+（eth， bnb， ada， xrp， dot， link， xlm， trx， eos， xrm） 这10个品种有后面新晋的主流， 也有类似eos， xrm之类的从前10跌出去到20-30的。 我们测这一波吧
 """
 from datetime import datetime
 from typing import List, Dict
@@ -51,7 +51,8 @@ class FourHourAlgo(bt.Algo):
         self.open_times = 13
         self.close_times = 13
 
-        self.period = 49
+        # self.period = 49
+        self.period = 24
         self.minutes = 60 * 4
 
         super().__init__()
@@ -63,28 +64,64 @@ class FourHourAlgo(bt.Algo):
         if target.universe.shape[0] < self.period * (self.minutes + 1):
             return True
 
-        # 1.查看当前是否有仓位
-        current_holding: Dict[str, float] = target.perm["current_holding"]
-        current_holding_pct_change = 0
-
-        # day 5 high
-        day_5_high = target.perm["day_5_high"]
+        # day 5 low
+        day_5_low = target.perm["day_5_low"]
 
         # 通过target获取总权益
         base = target.value
 
         # 循环每个币种
         for symbol in self.symbols:
+
             diff_minutes = int((target.universe.iloc[-1].name.to_pydatetime() - target.universe.iloc[
                 -1].name.to_pydatetime().replace(hour=0, minute=0)).total_seconds() / 60) / 60
 
             current_close = target.universe.iloc[-2][f"{symbol}_Close"]
             last_current_close = target.universe.iloc[-(2 + self.minutes)][f"{symbol}_Close"]
-
             close_24_mean = target.universe.iloc[-2][f'{self.period}_close_{self.minutes}']
 
+            # 记录交易信息的列表
+            trading_flag_long: Dict = target.perm["trading_flag_long"]
+            trading_flag_short: Dict = target.perm["trading_flag_short"]
+
+
+            # 空
+            # 查看当前是否有仓位
+            current_holding_short: Dict[str, float] = target.perm["current_holding_short"]
+
+
+            # 做多的逻辑
+            # 查看当前是否有仓位
+            current_holding_long: Dict[str, float] = target.perm["current_holding_long"]
+
             # 如果发现没有持仓，判断是否要开仓
-            if not current_holding.get(symbol):
+            if not current_holding_long.get(symbol):
+                if current_close > 0 and (
+                        diff_minutes == 4 or diff_minutes == 8 or diff_minutes == 12 or diff_minutes == 16 or
+                        diff_minutes == 20 or diff_minutes == 0) and current_close > \
+                        close_24_mean and \
+                        last_current_close < close_24_mean:
+                    logger.info(f"开仓(多):{symbol}-{target.universe.iloc[-1].name}")
+                    target.rebalance(1, child=f"{symbol}_Open", base=self.base)
+                    current_holding_long[symbol] = target.universe.iloc[-1].name
+                    trading_flag_long[target.universe.iloc[-1].name] = "开多"
+
+            # 如果持仓了，判断是否要平仓
+            elif current_holding_long.get(symbol):
+                current_low = target.universe.iloc[-1][f"{symbol}_Low"]
+                low_24 = target.universe.iloc[-1][f"{self.period}_low_{self.minutes}"]
+
+                if current_low < low_24:
+                    logger.info(f"平仓(多){symbol} - {target.universe.iloc[-1].name} -破了最低价-"
+                                f"{target.universe.iloc[-1][f'{symbol}_Open']}-{day_5_low}")
+                    target.rebalance(0, child=f"{symbol}_Open", base=self.base)
+                    del current_holding_long[symbol]
+                    trading_flag_long[target.universe.iloc[-1].name] = "平多"
+
+
+
+            # 如果发现没有持仓，判断是否要开仓
+            elif not current_holding_short.get(symbol):
                 if current_close > 0 and (diff_minutes == 4 or diff_minutes == 8 or diff_minutes == 12 or
                                           diff_minutes == 16 or
                                           diff_minutes == 20 or
@@ -94,21 +131,29 @@ class FourHourAlgo(bt.Algo):
                         close_24_mean \
                         and \
                         last_current_close > close_24_mean:
-                    logger.info(f"开仓:{symbol}-{target.universe.iloc[-1].name}")
+                    logger.info(f"开仓(空):{symbol}-{target.universe.iloc[-1].name}")
                     target.rebalance(-1, child=f"{symbol}_Open", base=self.base)
 
-                    current_holding[symbol] = target.universe.iloc[-1].name
+                    current_holding_short[symbol] = target.universe.iloc[-1].name
+                    trading_flag_short[target.universe.iloc[-1].name] = "开空"
 
             # 如果持仓了，判断是否要平仓
-            else:
+            elif current_holding_short.get(symbol):
                 current_high = target.universe.iloc[-1][f"{symbol}_High"]
                 high_24 = target.universe.iloc[-1][f"{self.period}_high_{self.minutes}"]
 
                 if current_high >= high_24:
-                    logger.info(f"平仓{symbol} - {target.universe.iloc[-1].name}")
+                    logger.info(f"平仓(空){symbol} - {target.universe.iloc[-1].name}")
                     target.rebalance(0, child=f"{symbol}_Open", base=self.base)
-                    del current_holding[symbol]
-                    target.perm["current_holding"] = current_holding
+                    del current_holding_short[symbol]
+                    trading_flag_short[target.universe.iloc[-1].name] = "平空"
+
+            # 在最后更新perm里面的数据
+            target.perm["current_holding_short"] = current_holding_short
+            target.perm["current_holding_long"] = current_holding_long
+            # 记录下来交易的方向
+            target.perm["trading_flag_short"] = trading_flag_short
+            target.perm["trading_flag_long"] = trading_flag_long
 
         return True
 
@@ -116,7 +161,8 @@ class FourHourAlgo(bt.Algo):
 def make_backtest_data(symbols: List[str]) -> pd.DataFrame:
     logger.info(f"开始获取数据:{symbols}")
     # start_time = "2019-01-01 00:00:00"
-    start_time = "2018-12-30 00:00:00"
+    # start_time = "2018-12-30 00:00:00"
+    # start_time = "2018-01-01 00:00:00"
     # start_time = "2019-05-20 00:00:00"
     # start_time = "2020-07-31 20:00:00"
     # start_time = "2020-08-01 00:00:00"
@@ -125,14 +171,14 @@ def make_backtest_data(symbols: List[str]) -> pd.DataFrame:
     # end_time = "2019-05-01 00:00:00"
     # end_time = "2019-05-28 00:00:00"
     # end_time = "2021-06-03 00:00:00"
-    end_time = "2021-06-10 00:00:00"
-    # end_time = "2021-05-11 00:00:00"
-
-    # start_time = "2021-05-01 00:00:00"
-    # end_time = "2021-06-25 00:00:00"
     #
-    # start_time = "2021-01-01 00:00:00"
-    # end_time = "2021-06-25 00:00:00"
+
+    # start_time = "2018-01-01 00:00:00"
+    # end_time = "2021-06-10 00:00:00"
+
+    # TODO:在整个修改完了之后改成上面的时间
+    start_time = "2021-01-01 00:00:00"
+    end_time = "2021-06-25 00:00:00"
 
     dfs = []
     for symbol in symbols:
@@ -161,8 +207,9 @@ class ChangeFlowBacktestV15(object):
         self.ADDTIONAL_INFO_PRICE_BUY = []
 
     def backtest_enhance_btc_v15(self, symbol_name):
-        logger.info(f"开始回测同时做空+做多: {symbol_name}")
-        period = 49
+        logger.info(f"开始回测做多策略 v12 : {symbol_name}")
+        # period = 49
+        period = 24
         minutes = 60 * 4
 
         symbols = [symbol_name.upper()]
@@ -206,28 +253,18 @@ class ChangeFlowBacktestV15(object):
 
         data[f'{period}_close_{minutes}'].ffill(inplace=True)
 
-        # # 5分钟里面的最低价
-        # data[f"5_period_low"] = data[f"low_{minutes}"].resample(f'{minutes}min').min().rolling(period).min().asfreq(
-        #     "min")
-
-        # 计算最近五日的最高价
-        # data[f"5_period_high"] = data[f"high_{minutes}"].resample(f'{minutes}min').max().rolling(5).max().asfreq(
-        #     "min")
-
-        # 计算最近五日的close价
-        # data[f"close_24"] = data[f"close_{minutes}"].resample(f'{minutes}min').last().rolling(24).last().asfreq(
-        #     "min")
-
         strategy_algo = FourHourAlgo(symbols=symbols, backtest=self)
         strategy = bt.Strategy('CombinationStrategy', [strategy_algo])
         #  在最买入的时候记录价格
         # 当前价格跌破上一个K线的最低价时， 执行平仓。
         strategy.perm['last_price'] = 0
+        strategy.perm["day_5_low"] = None
         # 记录当前的持仓的币种和价格
-        strategy.perm["current_holding"] = {}
-        strategy.perm["day_5_high"] = None
-
-        strategy.perm["ADDITION_INFO"] = []
+        strategy.perm["current_holding_long"] = {}
+        strategy.perm["current_holding_short"] = {}
+        # strategy.perm["trading_flag"] = []
+        strategy.perm["trading_flag_long"] = {}
+        strategy.perm["trading_flag_short"] = {}
 
         backtest = bt.Backtest(strategy, data, commissions=lambda q, p: abs(q) * p * 0.0012, integer_positions=False,
                                initial_capital=100)
@@ -242,27 +279,60 @@ class ChangeFlowBacktestV15(object):
         new_transactions.drop(columns=["Security"], inplace=True)
 
         results_data = []
-        current_info = {}
         net_value = 1
 
-        for index, value in transactions.iterrows():
-            if value.quantity < 0 and not current_info:
-                current_info["开仓时间"] = value.name[0]
-                current_info["开仓价格"] = value.price
-            elif value.quantity > 0 and current_info:
-                current_info["平仓时间"] = value.name[0]
-                current_info["平仓价格"] = value.price
-                current_info["盈利"] = -(current_info["平仓价格"] - current_info["开仓价格"]) * 100 / current_info["开仓价格"] - 0.1
-                net_value = net_value * (1 - (current_info["平仓价格"] - current_info["开仓价格"]) / current_info["开仓价格"] -
-                                         0.001)
-                current_info["净值"] = net_value
-                results_data.append(current_info)
+        current_info_short = {}
+        current_info_long = {}
+        import ipdb;
+        ipdb.set_trace()
+        transactions.index = [x[0] for x in transactions.index.tolist()]
+        for time, direction in backtest.strategy.perm["trading_flag_long"].items():
+            print(time)
+            value = transactions[transactions.index == time].iloc[0]
+            if direction == "开空":
+                current_info_short["开仓时间"] = value.name[0]
+                current_info_short["开仓价格"] = value.price
+
+            elif direction == "平空":
+                current_info_short["平仓时间"] = value.name[0]
+                current_info_short["平仓价格"] = value.price
+                current_info_short["盈利"] = -(current_info_short["平仓价格"] - current_info_short["开仓价格"]) * 100 / \
+                                           current_info_short["开仓价格"] - 0.1
+                net_value = net_value * (
+                        1 - (current_info_short["平仓价格"] - current_info_short["开仓价格"]) / current_info_short["开仓价格"] -
+                        0.001)
+                current_info_short["净值"] = net_value
+                current_info_short["交易方向"] = "空"
+
+                # record data
+                results_data.append(current_info_short)
+
                 # empty it after record
-                current_info = {}
-            else:
-                logger.info(f"处理数据异常")
-                import ipdb;
-                ipdb.set_trace()
+                current_info_short = {}
+
+        for time, direction in backtest.strategy.perm["trading_flag_short"].items():
+            value = transactions[transactions.index == time].iloc[0]
+            if direction == "开多":
+                # elif direction == "开多":
+                current_info_long["开仓时间"] = value.name[0]
+                current_info_long["开仓价格"] = value.price
+            elif direction == "平多":
+                current_info_long["平仓时间"] = value.name[0]
+                current_info_long["平仓价格"] = value.price
+                current_info_long["盈利"] = (current_info_long["平仓价格"] - current_info_long["开仓价格"]) * 100 / \
+                                          current_info_long["开仓价格"] - \
+                                          0.1
+                net_value = net_value * (
+                        1 + (current_info_long["平仓价格"] - current_info_long["开仓价格"]) / current_info_long["开仓价格"] -
+                        0.001)
+                current_info_long["净值"] = net_value
+                current_info_long["交易方向"] = "多"
+
+                # record data
+                results_data.append(current_info_long)
+
+                # empty it after record
+                current_info_long = {}
 
         results_df = pd.DataFrame(results_data)
 
@@ -271,6 +341,7 @@ class ChangeFlowBacktestV15(object):
         result_name = f"{symbol_name}_{strategy_algo.period}_{strategy_algo.open_times}_daily"
 
         columns = [
+            "交易方向",
             "开仓时间",
             "开仓价格",
 
@@ -278,7 +349,7 @@ class ChangeFlowBacktestV15(object):
             "平仓价格",
 
             "盈利",
-            "净值"
+            "净值",
         ]
         results_df[columns].to_csv(f"{result_name}_{self}.csv", float_format='%.12f')
 

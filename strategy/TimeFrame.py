@@ -1,6 +1,7 @@
 import lightgbm as lgb
 import pandas as pd
-import talib
+import pandas as talib
+#import talib
 
 from backtesting import Strategy, run_backtest
 
@@ -12,7 +13,8 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     # add bolling
     bb_periods = [5, 10, 20]
     for i in bb_periods:
-        upper, middle, lower = talib.BBANDS(df.Close, timeperiod=5, nbdevup=2, nbdevdn=2)
+#        upper, middle, lower = talib.BBANDS(df.Close, timeperiod=5, nbdevup=2, nbdevdn=2)
+        upper, middle, lower = 0,0,0
         df[f"upper_{i}"] = upper
         df[f"middle_{i}"] = middle
         df[f"lower_{i}"] = lower

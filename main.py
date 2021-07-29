@@ -14,12 +14,12 @@ from api.exchange import ExchangeAPI, ExchangeApiWithID, ExchangeWithSymbolID
 from api.huobi.base_request import HuobiRequest
 from backtesting import run_backtest, run_optimize
 from backtesting.bt_backtest import run_bt_backtest
-from backtesting.grid_backtest import run_grid_backtest
+# from backtesting.grid_backtest import run_grid_backtest
 from base.config import logger
 from base.consts import EthereumCoinAddress
 from db.db_context import session_socpe
 from db.default.init import init_data
-from db.model import Factor, SymbolModel
+from db.model import Factor, SymbolModel, ExchangeAPIModel
 from execution.execution_server import serve
 from execution.execution_test_client import test_execution_client
 from execution.robot_basis import RobotManager as BasisRobotMananger
@@ -32,6 +32,7 @@ from periodic_task.bsc_scanner_new_coin import get_bscscan
 from periodic_task.funding_rate_order import order_usdt_future_spot, sell_all_spot, \
     binance_transfer_usdt_between_market, close_usdt_future_spot
 from periodic_task.new_grid import FutureGridStrategy
+from periodic_task.strategy_628 import Strategy_628
 from periodic_task.uniswap_price_generator import get_uniswap_token_price
 from scripts.analyse_change_flow import backtest_enhance_btc
 from scripts.analyse_change_flow_v10 import ChangeFlowBacktestV10
@@ -47,6 +48,7 @@ from scripts.analyse_change_flow_v5 import ChangeFlowBacktestV5
 from scripts.analyse_change_flow_v6 import ChangeFlowBacktestV6
 from scripts.analyse_change_flow_v8 import ChangeFlowBacktestV8
 from scripts.analyse_change_flow_v9 import ChangeFlowBacktestV9
+from scripts.combina_change_flow import combine_two_result
 from strategy.BtcFactorStrategy import BtcFactorStrategy as Strategy
 # from strategy.GridStrategyUpdate import GripStrategy as Strategy
 # from strategy.GridStrategyPercent import GripStrategy as Strategy
@@ -133,8 +135,9 @@ def backtest(name):
         # symbol_names = ["BTC", "ETH", "BNB", "EOS", "XRP"]
         # symbol_names = ["ADA"]
         # symbol_names = ["BTC", "ETH", "ADA"]
-        symbol_names = ["BTC"]
-        # symbol_names = ["ETH", "ADA"]
+        # symbol_names = ["BTC"]
+        symbol_names = ["ETH", "BNB"]
+        # symbol_names = ["ADA"]
         for symbol in symbol_names:
             # backtest = ChangeFlowBacktest()
             # backtest.backtest_enhance_btc_v2(symbol_name=symbol)
@@ -148,12 +151,16 @@ def backtest(name):
             # backtest.backtest_enhance_btc_v11(symbol_name=symbol)
             # backtest = ChangeFlowBacktestV12()
             # backtest.backtest_enhance_btc_v12(symbol_name=symbol)
-            # backtest = ChangeFlowBacktestV12_4H()
-            # backtest.backtest_enhance_btc_v12(symbol_name=symbol)
-            backtest = ChangeFlowBacktestV11_4H()
-            backtest.backtest_enhance_btc_v11(symbol_name=symbol)
+
             # backtest = ChangeFlowBacktestV15()
             # backtest.backtest_enhance_btc_v15(symbol_name=symbol)
+            backtest = ChangeFlowBacktestV12_4H()
+            long: str = backtest.backtest_enhance_btc_v12(symbol_name=symbol)
+            backtest = ChangeFlowBacktestV11_4H()
+            short: str = backtest.backtest_enhance_btc_v11(symbol_name=symbol)
+            # long = "49_20_BTC_24_13_daily.csv"
+            # short = "11_11_BTC_24_13_daily.csv"
+            combine_two_result(path_a=long, path_b=short)
 
 
     elif name == "basis":
@@ -166,43 +173,7 @@ def backtest(name):
         # df = get_basis_kline("binance_next_this_quarter_ticker.csv")
         run_backtest(Strategy, basis=df, commission=.001, slippage=.001, detail="1m", is_basis=True)
     elif name == "grid":
-        # run_grid_backtest(grid_strategy_id="FIL:1612178637.647524", start_time="2021-01-01 00:00:00", end_time="2021-02-01 00:00:00", )
-        run_grid_backtest(grid_strategy_id="28:1818", start_time="2021-01-01 00:00:00",
-                          end_time="2021-02-01 00:00:00", )
-        # run_grid_backtest(grid_strategy_id="FIL:1969:1612410099.9704194", start_time="2020-12-31 00:00:00", end_time="2021-01-03 00:00:00", )
-        # else:
-        # run_backtest(Strategy, 1, "2019-10-01 00:00:00", "2020-09-17 00:00:00", detail="1m", strategy_id=1)
-        # run_backtest(Strategy, 1, "2019-10-01 00:00:00", "2019-11-15 00:00:00", detail="1m", strategy_id=1)
-        # run_backtest(Strategy, 1, "2020-09-22 00:00:00", "2020-09-25 00:00:00", detail="1d", strategy_id=1)
-        # run_backtest(Strategy, 1, "2020-09-22 00:00:00", "2020-09-25 00:00:00", detail="1d", strategy_id=1)
-        # run_backtest(Strategy, 1, "2020-05-01 00:00:00", detail="1d", strategy_id=1)
-
-        start_time = "2019-01-01 00:00:00"
-        end_time = "2020-04-01 00:00:00"
-        df = get_kline_symbol_market(
-            # symbol="BTCUSDT"
-            symbol="ETHUSDT"
-        )
-
-        # start_time = "2020-10-01 00:00:00"
-        # end_time = "2020-11-20 00:00:00"
-        # factor_df = pd.DataFrame()
-        # factor_df = get_kline(5, start_time, end_time, "1m")
-        # factor_df.columns = [f"factor_{i}" for i in factor_df.columns]
-
-        # run_backtest(Strategy, 764, start_time, end_time, detail="1d", strategy_id=1, leverage=20, factor_df=factor_df, volume_kline=False)
-
-
-#        run_backtest(Strategy, 764, start_time, end_time, detail="1d", strategy_id=1, leverage=20, volume_kline=True)
-# start_time = "2020-10-01 00:00:00"
-# end_time = "2020-10-20 00:00:00"
-
-#        start_time = "2019-11-11 00:00:00"
-# start_time = "2020-01-10 00:00:00"
-#        end_time = "2020-12-11 00:00:00"
-# end_time = "2020-04-10 00:00:00"
-#        df = get_pair_kline(trading_symbol_a="bch", trading_symbol_b="eos", scale_factor=88, start_time=start_time, end_time=end_time)
-#        run_backtest(Strategy, custom_data=df, start_time=start_time, end_time=end_time, strategy_id=1, detail="1D", slippage=0.0, commission=0.0004 * 89)
+        pass
 
 
 @click.command()
@@ -558,7 +529,7 @@ def sync():
 
     # symbol_names = ["BTC","kj"]
     # symbol_names = ["ADA"]
-    symbol_names = ["BTC"]
+    symbol_names = ["ETH", "BNB"]
 
     for symbol in symbol_names:
         symbol = SymbolModel.get_symbol(exchange="binance", market_type="spot", symbol=symbol.upper() + "USDT")
@@ -711,6 +682,11 @@ def symbol():
     AsynExchange.update_symbol()
 
 
+@click.command()
+def run():
+    Strategy_628().run()
+
+
 # @click.command()
 # def runbybit():
 #     from random import randint
@@ -731,6 +707,67 @@ def symbol():
 #     # print(client.Conditional.Conditional_query(symbol="BTCUSD").result())
 #     # print(client.Positions.Positions_myPosition(symbol="BTCUSD").result())
 #     print(client.Order.Order_query(symbol="BTCUSD").result())
+
+
+@click.command()
+def addaccount():
+    infos = [
+        {
+            "account": "陈1",
+            "api_key": "SCEhm2pI3ZAheChXwKRe0N6PLlhOYEcUNQK15l6RXOUwvWK5zdzVnVaptfz6nzJo",
+            "secret_key": "ijUwlMhfqybdsKjcoItik4r5LwW9GujsxgLMuOpJN16196eW24W9v3NzHy2oJg8D",
+            "passphrase": "123456",
+            'exchange': 'binance'
+        },
+        {
+            "account": "陈2",
+            "api_key": "kg60EKWKVCiFurEqBICu7S0dPJ46Or3bikM2OCJZ8pj7thpHNuqGH8yb7mwJSW3J",
+            "secret_key": "FAlJPp26knRbBdsGJ8tShtHYy3IzRO3vuBQOkhbqadStl4s0FZ8oxJdfwle7ecON",
+            "passphrase": "123456",
+            'exchange': 'binance'
+        },
+        {
+            "account": "王宙斯",
+            "api_key": "C8SaWPS8LhmzbRu0UJoyyUAuRxFCsQqg80BGJKJbFN7PkWctRWKNKXE0HbfZo3Ej",
+            "secret_key": "1Fb5vnTxwFT2a2ZAi6W6V8xIpRGrhoQqj8Os4wjj6jQotvnmIK88j5lNta17rOpy",
+            "passphrase": "123456",
+            'exchange': 'binance'
+        },
+        {
+            "account": "彭总",
+            "api_key": "h3gdAN5U1YLXf1vTAHurWdoTELl1i54Ky4ITc99XTEYsllJnu1D9c6Csqboc9PeY",
+            "secret_key": "jwxswjfTW1Ov5vTLUDyAeKS7PkliVSBWF3x7K2QJ4Y7RcW5PhaSQ6zNVUYA8rmaX",
+            "passphrase": "123456",
+            'exchange': 'binance'
+        },
+        {
+            "account": "张总",
+            "api_key": "5g2JoZnV5v5DWfzl9kJry1jFlaCHZJJU2yg2RWYGQklrMiD775fQFDWWktn9mFCI",
+            "secret_key": "R3ejGHRcg5Y20N9qChJqZcyLhcMpG4OqQvwJm41LHZG22T1p5gtqZpXdFLyt4ODv",
+            "passphrase": "123456",
+            'exchange': 'binance'
+        },
+        {
+            "account": "易总",
+            "api_key": "cDEAYTkJvZ1IE8vsxEhYH8KElURD9Mq9j3CDP9eSFLxDIoPYP8818xIou3X1cC0Z",
+            "secret_key": "ctNsa3Iw0j7V80n7OuIEioQg4Cp8hxfz9Zx5IxOgqGTgMXL2THtVHjMLBPBV4Jxg",
+            "passphrase": "123456",
+            'exchange': 'binance'
+        },
+        {
+            "account": "谭总",
+            "api_key": "vNbGmnUikOZ6f5oLcUZkZ5fSXXYynsUWWfntpRQl0DxA71iY6IrtKB7yq9L6pbRh",
+            "secret_key": "oNjWUpmgiodHkyz1O7RCLdIPHruzspH1sQmq5kiKxpjIR7cimnxZpo4SxMWonWOY",
+            "passphrase": "123456",
+            'exchange': 'binance'
+        },
+    ]
+
+    with session_socpe() as sc:
+        for info in infos:
+            api = ExchangeAPIModel(**info)
+            sc.merge(api)
+            print(f"success add:{api.id}-{api.account}")
 
 
 cli.add_command(optimize)
@@ -765,6 +802,7 @@ cli.add_command(grid)
 cli.add_command(fundrate)
 cli.add_command(symbol)
 # cli.add_command(runbybit)
+cli.add_command(addaccount)
 
 if __name__ == '__main__':
     cli()

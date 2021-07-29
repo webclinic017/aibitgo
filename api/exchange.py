@@ -47,7 +47,7 @@ def get_exchange_api_with_info(symbol_name: str, quote_coin: str = "USDT", marke
         logger.error(f"还不支持交易所:{exchange}")
 
 
-def ExchangeOnlySymbolAPI(symbol_name: str):
+def exchangeonlysymbolapi(symbol_name: str):
     """用于调用交易所不需要鉴权的接口
 
     Args:
