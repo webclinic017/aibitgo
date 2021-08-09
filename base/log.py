@@ -17,7 +17,8 @@ class Logger(logging.Logger):
         super().__init__(name, level)
         if not self.hasHandlers():
             os.makedirs(f'{BASE_DIR}/logs/{name}/', exist_ok=True)
-            fh = TimedRotatingFileHandler(filename=f"{BASE_DIR}/logs/{name}/{name}.log", when='H', backupCount=7 * 24, encoding='utf-8')
+            fh = TimedRotatingFileHandler(filename=f"{BASE_DIR}/logs/{name}/{name}.log", when='H', backupCount=3 * 24,
+                                          encoding='utf-8')
             fh.setFormatter(self.formatter)
             self.addHandler(fh)
             fh.close()

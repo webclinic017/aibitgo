@@ -71,8 +71,7 @@ def init_account():
             "api_key": "Yo0IapxftFE1nAYLjsiWNKmH2TSvU3WrJMuzbSioJapoM7S7kaMThIcrvR2g3MeG",
             "secret_key": "EnVz3PWTDFDDlq33nJoC2zz9ETkxJDxWNr0l38UMDbG69EKQ9xsSAJrS2X5mqUow",
             "passphrase": "123456",
-            'exchange': 'binance'
-        },
+            'exchange': 'binance'},
     ]
 
     with session_socpe() as sc:
@@ -87,6 +86,25 @@ def init_account():
 def run(task):
     if task == "account":
         init_account()
+    elif task == "test":
+        # test btc
+        symbol_id = 785
+        # account_id_amount = {
+        # my account
+        # 32: 0.001,
+        # }
+
+        # test bnb
+
+        symbol_id = 800
+        account_id_amount = {
+            # my account
+            32: 0.03,
+        }
+
+        strategy = Strategy_628(symbol_id=symbol_id, account_id_amount=account_id_amount)
+        asyncio.run(strategy.run())
+
     elif task == "check":
         coin_api_id = 108
         coin_symbol_id = 765
@@ -100,16 +118,20 @@ def run(task):
             32: 0.001,
 
             # 旷总账户
-            # 31: 0.1,
+            31: 0.2,
 
-            101: 0.05,
-            102: 0.05,
+            101: 0.1,
+            102: 0.1,
 
-            103: 0.1,
+            103: 0.2,
             104: 0.1,
             105: 0.1,
             106: 0.1,
-            107: 0.1
+
+            # 103: 0.1,
+            # 104: 0.1,
+            # 105: 0.1,
+            # 106: 0.1,
         }
         strategy = Strategy_628(symbol_id=symbol_id, account_id_amount=account_id_amount)
         asyncio.run(strategy.run())
@@ -117,21 +139,31 @@ def run(task):
     elif task == "bnb":
         symbol_id = 800
         account_id_amount = {
-            101: 2,
-            102: 2,
-            32: 0.01
+            101: 1,
+            102: 1,
+            32: 0.03
         }
-        strategy = Strategy_628(symbol_id=symbol_id, account_id_amount=account_id_amount)
+        strategy = Strategy_628(symbol_id=symbol_id, account_id_amount=account_id_amount, change=0.002)
         asyncio.run(strategy.run())
 
     elif task == "eth":
         symbol_id = 786
         account_id_amount = {
-            101: 0.5,
-            102: 0.5,
-            32: 0.0003
+            # chen
+            101: 2,
+            102: 2,
+
+            # me
+            32: 0.003,
+            # 旷总账户
+            31: 4,
+
+            103: 4,
+            104: 2,
+            105: 1,
+            106: 2,
         }
-        strategy = Strategy_628(symbol_id=symbol_id, account_id_amount=account_id_amount)
+        strategy = Strategy_628(symbol_id=symbol_id, account_id_amount=account_id_amount, change=0.002)
         asyncio.run(strategy.run())
 
 

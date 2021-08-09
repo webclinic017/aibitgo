@@ -770,6 +770,24 @@ def addaccount():
             print(f"success add:{api.id}-{api.account}")
 
 
+@click.command()
+@click.argument("start")
+@click.argument("end")
+def localfeature():
+    logger.info(f"start train start:{start} end:{end}")
+    local_folder = "/root/data/local_data"
+    dfs = []
+    for start_time in tqdm([arrow.get(2021, 7, i) for i in range(int(start), int(end))]):
+        df = pd.read_hdf(f"{local_folder}/{arrow_format(start_time)}.hdf", key='hft')
+        using_feature = get_using_feature()
+        print(arrow_format(start_time))
+        dfs.append(df[using_feature])
+
+    df = pd.concat(dfs)
+    new_df: pd.DataFrame = feature_engineer(df)
+    new_df.to_hdf(path_or_buf=f"7_{start}_{end}.hdf", mode='w')
+
+
 cli.add_command(optimize)
 cli.add_command(backtest)
 cli.add_command(superVisor)
