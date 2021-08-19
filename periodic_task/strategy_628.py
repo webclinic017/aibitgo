@@ -117,9 +117,10 @@ class Strategy_628(object):
             order_amount = self.account_id_amount[api.api.id]
             await self.action_one_account(api, order_amount)
 
-            # 在每个4小时的结束之前，平掉所有的挂单
-            if self.now.minute == 59 and self.now.hour % 4 == 3 and self.now.second >= 50 and self.now.second <= 59:
-                await api.cancel_symbol_order()
+            # 取消每四个小时撤单的逻辑
+            # # 在每个4小时的结束之前，平掉所有的挂单
+            # if self.now.minute == 59 and self.now.hour % 4 == 3 and self.now.second >= 50 and self.now.second <= 59:
+            #     await api.cancel_symbol_order()
 
     async def action_one_account(self, account_api: BinanceApi, order_amount: float):
         """
