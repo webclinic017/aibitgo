@@ -1,3 +1,4 @@
+import os
 from contextlib import contextmanager
 from typing import Iterator
 
@@ -6,10 +7,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
 
 from base.config import mysql_cfg, logger_level
-from base.log import Logger
+from base.log import Logger, BASE_DIR
 
-db_connect = "mysql+pymysql://{user}:{passwd}@{host}:{port}/{db}".format_map(mysql_cfg)
-engine = create_engine(db_connect, max_overflow=1000, pool_size=20)
+# db_connect = "mysql+pymysql://{user}:{passwd}@{host}:{port}/{db}".format_map(mysql_cfg)
+SQLLITE_PATH = os.path.join(BASE_DIR, "info.db")
+db_connect = f'sqlite:///{SQLLITE_PATH}'
+engine = create_engine(db_connect)
+
+# TODO: delete mysql db engine
+# db_connect = "mysql+pymysql://{user}:{passwd}@{host}:{port}/{db}".format_map(mysql_cfg)k
+# engine = create_engine(db_connect, max_overflow=1000, pool_size=20)
+
 fast_api_session_maker = FastAPISessionMaker(db_connect)
 SessionType = scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
 

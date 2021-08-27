@@ -272,6 +272,6 @@ class Strategy_628(object):
         # 特殊处理btc币本位的合约
         if self.symbol_id == 785:
             #  林
-            await self.order_coin_future(coin_api_id=108, order_amount=150)
+            await self.order_coin_future(coin_api_id=108, order_amount=200)
             #  陈2
-            await self.order_coin_future(coin_api_id=102, order_amount=400)
+            await self.order_coin_future(coin_api_id=102, order_amount=500)
